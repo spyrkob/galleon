@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 Red Hat, Inc. and/or its affiliates
+ * Copyright 2016-2021 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +20,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,7 +113,7 @@ public class ProvisioningRuntimeBuilder {
     private List<FeaturePackRuntimeBuilder> visited = new ArrayList<>();
     private int pkgDepMask;
     int includedPkgDeps;
-
+    private final Map<String, Set<ResolvedFeatureId>> layersExcludedFeatures = new HashMap<>();
     private ProvisioningRuntimeBuilder(final MessageWriter messageWriter) {
         this.messageWriter = messageWriter;
     }
@@ -481,8 +483,12 @@ public class ProvisioningRuntimeBuilder {
             }
         }
         configStack.includedLayer(layerId);
+        Set<ResolvedFeatureId> layersExcluded = layersExcludedFeatures.get(layerId.getName());
         for(ResolvedFeature feature : layerStack.orderFeatures(false)) {
             if(configStack.isFilteredOut(feature.getSpecId(), feature.getId())) {
+                continue;
+            }
+            if (layersExcluded.contains(feature.id)) {
                 continue;
             }
             configStack.includeFeature(feature.id, feature.spec, feature.params,
@@ -763,6 +769,14 @@ public class ProvisioningRuntimeBuilder {
             fgOrigin = currentOrigin.producer;
             currentOrigin = originalOrigin;
         }
+        Set<ResolvedFeatureId> layersExcluded = null;
+        if (fg.isLayer()) {
+            layersExcluded = layersExcludedFeatures.get(fg.getName());
+            if (layersExcluded == null) {
+                layersExcluded = new HashSet<>();
+                layersExcludedFeatures.put(fg.getName(), layersExcluded);
+            }
+        }
         final ResolvedFeatureGroupConfig resolvedFgc = new ResolvedFeatureGroupConfig(configStack, fg, fgOrigin);
         resolvedFgc.inheritFeatures = fg.isInheritFeatures();
         if(fg.hasExcludedSpecs()) {
@@ -773,6 +787,9 @@ public class ProvisioningRuntimeBuilder {
         }
         if(fg.hasExcludedFeatures()) {
             resolvedFgc.excludedFeatures = resolveExcludedIds(resolvedFgc.excludedFeatures, fg.getExcludedFeatures());
+            if (layersExcluded != null) {
+                layersExcluded.addAll(resolvedFgc.excludedFeatures);
+            }
         }
         if(fg.hasIncludedFeatures()) {
             resolvedFgc.includedFeatures = resolveIncludedIds(resolvedFgc.includedFeatures, fg.getIncludedFeatures());
@@ -791,6 +808,9 @@ public class ProvisioningRuntimeBuilder {
                     }
                     if (extFg.hasExcludedFeatures()) {
                         resolvedFgc.excludedFeatures = resolveExcludedIds(resolvedFgc.excludedFeatures, extFg.getExcludedFeatures());
+                         if (layersExcluded != null) {
+                            layersExcluded.addAll(resolvedFgc.excludedFeatures);
+                         }
                     }
                     if (extFg.hasIncludedFeatures()) {
                         resolvedFgc.includedFeatures = resolveIncludedIds(resolvedFgc.includedFeatures, extFg.getIncludedFeatures());
