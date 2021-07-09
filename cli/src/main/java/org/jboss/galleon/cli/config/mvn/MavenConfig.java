@@ -79,9 +79,9 @@ public class MavenConfig {
     private static final MavenRemoteRepository GA_REPO = new MavenRemoteRepository("jboss-ga",
             DEFAULT_REPOSITORY_TYPE, GA_REPO_URL);
     static {
-        DEFAULT_REPOSITORIES.add(CENTRAL_REPO);
-        DEFAULT_REPOSITORIES.add(JBOSS_REPO);
-        DEFAULT_REPOSITORIES.add(GA_REPO);
+//        DEFAULT_REPOSITORIES.add(CENTRAL_REPO);
+//        DEFAULT_REPOSITORIES.add(JBOSS_REPO);
+//        DEFAULT_REPOSITORIES.add(GA_REPO);
     }
     public interface MavenChangeListener {
         void configurationChanged(MavenConfig config) throws XMLStreamException, IOException;

@@ -16,6 +16,7 @@
  */
 package org.jboss.galleon.cli.cmd.maingrp;
 
+import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,8 +40,11 @@ import org.jboss.galleon.ProvisioningException;
 import org.jboss.galleon.ProvisioningManager;
 import org.jboss.galleon.ProvisioningOption;
 import org.jboss.galleon.cli.CliLogging;
+import org.jboss.galleon.cli.CliMavenArtifactRepositoryManager;
 import org.jboss.galleon.cli.CommandExecutionException;
 import org.jboss.galleon.cli.HelpDescriptions;
+import org.jboss.galleon.cli.config.mvn.MavenConfig;
+import org.jboss.galleon.cli.config.mvn.MavenRemoteRepository;
 import org.jboss.galleon.cli.resolver.PluginResolver;
 import org.jboss.galleon.cli.PmCommandActivator;
 import org.jboss.galleon.cli.PmCommandInvocation;
@@ -57,6 +61,7 @@ import org.jboss.galleon.config.ConfigId;
 import org.jboss.galleon.config.FeaturePackConfig;
 import org.jboss.galleon.layout.FeaturePackDescriber;
 import org.jboss.galleon.universe.FeaturePackLocation;
+import org.jboss.galleon.universe.maven.repo.MavenRepoManager;
 import org.jboss.galleon.util.PathsUtils;
 
 /**
@@ -160,9 +165,36 @@ public class InstallCommand extends AbstractPluginsCommand {
         super(pmSession);
     }
 
+    private void addChannelRepository(PmCommandInvocation session) throws CommandExecutionException {
+        try {
+            final MavenConfig mavenConfig = session.getPmSession().getPmConfiguration().getMavenConfig();
+            mavenConfig.addRemoteRepository(new MavenRemoteRepository("channel", "default",
+                                                             "always", "always",
+                                                                      true, true,
+                                                                      "http://localhost:8081/repository/dev/"));
+            mavenConfig.setDefaultSnapshotPolicy("always");
+            final MavenRepoManager mavenRepoManager = pmSession.getMavenRepoManager();
+            if (mavenRepoManager instanceof CliMavenArtifactRepositoryManager) {
+                ((CliMavenArtifactRepositoryManager)mavenRepoManager).rebuildSettings();
+            }
+        } catch (XMLStreamException | IOException | ProvisioningException e) {
+            throw new CommandExecutionException(session.getPmSession(), "Failed to set up channel repository", e);
+        }
+    }
+
+    private void removeChannelRepository(PmCommandInvocation session) throws CommandExecutionException {
+        final MavenConfig mavenConfig = session.getPmSession().getPmConfiguration().getMavenConfig();
+        try {
+            mavenConfig.removeRemoteRepository("channel");
+        } catch (XMLStreamException | IOException | ProvisioningException e) {
+            throw new CommandExecutionException(session.getPmSession(), "Failed to remove channel repository", e);
+        }
+    }
+
     @Override
     protected void runCommand(PmCommandInvocation session, Map<String, String> options, FeaturePackLocation loc) throws CommandExecutionException {
         try {
+            addChannelRepository(session);
             String filePath = (String) getValue(FILE_OPTION_NAME);
             final ProvisioningManager manager = getManager(session);
             String layers = (String) getValue(LAYERS_OPTION_NAME);
@@ -213,6 +245,8 @@ public class InstallCommand extends AbstractPluginsCommand {
             }
         } catch (ProvisioningException | IOException ex) {
             throw new CommandExecutionException(session.getPmSession(), CliErrors.installFailed(), ex);
+        } finally {
+            removeChannelRepository(session);
         }
     }
 

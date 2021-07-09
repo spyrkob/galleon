@@ -89,8 +89,8 @@
     <version.org.wildfly.checkstyle-config>1.0.8.Final</version.org.wildfly.checkstyle-config>
 
     <!-- license-maven-plugin configuration -->
-    <license.failIfMissing>true</license.failIfMissing>
-    <license.failIfUnknown>true</license.failIfUnknown>
+    <license.failIfMissing>false</license.failIfMissing>
+    <license.failIfUnknown>false</license.failIfUnknown>
 
     <output.dir.prefix>galleon</output.dir.prefix>
     <galleon.repo.scm.connection>git@github.com:wildfly/galleon.git</galleon.repo.scm.connection>

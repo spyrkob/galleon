@@ -83,4 +83,8 @@ public class CliMavenArtifactRepositoryManager extends AbstractMavenArtifactRepo
         }
         return mavenSettings;
     }
+
+    public void rebuildSettings() throws ArtifactException {
+        mavenSettings = config.buildSettings(getRepositorySystem(), listener);
+    }
 }

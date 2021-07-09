@@ -301,7 +301,7 @@ public class PmSession implements CompleterInvocationProvider<PmCompleterInvocat
         }
     }
 
-    MavenRepoManager getMavenRepoManager() {
+    public MavenRepoManager getMavenRepoManager() {
         return maven;
     }
 
