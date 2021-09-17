@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Red Hat, Inc. and/or its affiliates
+ * Copyright 2016-2021 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -112,7 +112,7 @@ public abstract class AbstractMavenArtifactRepositoryManager implements MavenRep
         resolve(mavenArtifact);
     }
 
-    private VersionRangeResult getVersionRange(Artifact artifact) throws MavenUniverseException {
+    protected VersionRangeResult getVersionRange(Artifact artifact) throws MavenUniverseException {
         VersionRangeRequest rangeRequest = new VersionRangeRequest();
         rangeRequest.setArtifact(artifact);
         rangeRequest.setRepositories(getRepositories());

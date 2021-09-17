@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Red Hat, Inc. and/or its affiliates
+ * Copyright 2016-2021 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -131,13 +131,33 @@ public class MvnNoLocUniverse implements Universe<MvnNoLocUniverse>, Producer<Mv
 
     @Override
     public String getLatestBuild(FPID fpid) throws ProvisioningException {
-        return repo.getLatestVersion(toArtifact(fpid));
+        MavenArtifact artifact = toArtifact(fpid);
+        artifact.setVersionRange("[0.0,)");
+        String lowest = null;
+        if (artifact.getVersion() == null) {
+            lowest = "final";
+        } else {
+            if (artifact.getVersion().endsWith("-SNAPSHOT")) {
+                lowest = "snapshot";
+            }
+        }
+        return repo.getLatestVersion(artifact, lowest);
     }
 
     @Override
     public Path resolve(FeaturePackLocation fpl) throws ProvisioningException {
-        final MavenArtifact artifact = toArtifact(fpl.getFPID());
-        repo.resolve(artifact);
+        MavenArtifact artifact = null;
+        String build = fpl.getBuild();
+        if (build == null || build.isEmpty()) {
+            artifact = toArtifact(fpl.getFPID(), "unknown");
+            artifact.setVersion(null);
+            artifact.setVersionRange("[0.0,)");
+            repo.resolveLatestVersion(artifact);
+        } else {
+            artifact = toArtifact(fpl.getFPID());
+            repo.resolve(artifact);
+        }
+        System.out.println("FPL VERSION in input " + fpl.getBuild() + " artifact version in output " + artifact.getVersion());
         return artifact.getPath();
     }
 
@@ -157,6 +177,10 @@ public class MvnNoLocUniverse implements Universe<MvnNoLocUniverse>, Producer<Mv
     }
 
     private static MavenArtifact toArtifact(FPID fpid) throws ProvisioningException {
+        return toArtifact(fpid, fpid.getBuild());
+    }
+
+    private static MavenArtifact toArtifact(FPID fpid, String version) throws ProvisioningException {
         final String coords = fpid.getProducer().getName();
         final MavenArtifact artifact = new MavenArtifact();
         int colon = nextColon(coords, 0);
@@ -168,7 +192,7 @@ public class MvnNoLocUniverse implements Universe<MvnNoLocUniverse>, Producer<Mv
         colon = nextColon(coords, colon);
         artifact.setClassifier(coords.substring(prevColon + 1, colon));
         artifact.setExtension(coords.substring(colon + 1));
-        artifact.setVersion(fpid.getBuild());
+        artifact.setVersion(version);
         return artifact;
     }
 
