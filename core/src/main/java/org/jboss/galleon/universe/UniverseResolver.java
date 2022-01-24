@@ -54,7 +54,7 @@ public class UniverseResolver {
     private Map<UniverseSpec, Universe<?>> resolvedUniverses = Collections.emptyMap();
     private final Map<FeaturePackLocation.FPID, Path> localFeaturePacks;
 
-    UniverseResolver(UniverseResolverBuilder<?> builder) throws ProvisioningException {
+    protected UniverseResolver(UniverseResolverBuilder<?> builder) throws ProvisioningException {
         this.ufl = builder.getUfl();
         this.localFeaturePacks = builder.getLocalFeaturePacks();
     }
